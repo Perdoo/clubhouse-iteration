@@ -1,0 +1,26 @@
+name: Clubhouse Iteration
+description: Create an iteration
+branding:
+  icon: arrow-right-circle
+  color: purple
+inputs:
+  token:
+    description: Auth token for Clubhouse's API
+    required: true
+  name:
+    description: Iteration name
+    required: true
+  assignStoriesFromStateId:
+    description: Workflow state id that contains the stories for the iteration
+    required: true
+  createIfStateEmpty:
+    description: Create the iteration even if there aren't any stories to assign to it
+    required: false
+outputs:
+  iteration-created:
+    description: Was the iteration created
+  url:
+    description: Iteration URL
+runs:
+  using: "node12"
+  main: "index.js"
