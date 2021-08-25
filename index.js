@@ -59,8 +59,8 @@ async function assignStoriesToIteration(client, iteration, stateId) {
 
 async function run() {
     try {
-        const token = core.getInput('token');
-        const client = Clubhouse.create(token);
+        const chToken = core.getInput('chToken');
+        const client = Clubhouse.create(chToken);
         const canCreateIfStateEmpty = core.getInput('createIfStateEmpty') != 'false';
         const stateId = core.getInput('assignStoriesFromStateId');
 
