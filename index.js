@@ -61,8 +61,10 @@ async function run() {
     try {
         const chToken = core.getInput('chToken');
         const client = Clubhouse.create(chToken);
-        const canCreateIfStateEmpty = core.getInput('createIfStateEmpty') != 'false';
+        const canCreateIfStateEmpty = core.getInput('createIfStateEmpty') ? core.getBooleanInput('createIfStateEmpty') : true;
         const stateId = core.getInput('assignStoriesFromStateId');
+
+        core.setSecret('chToken');
 
         if (!canCreateIfStateEmpty && await isStateEmpty(client, stateId)) {
             core.setOutput('iteration-created', false);
