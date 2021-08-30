@@ -1,12 +1,12 @@
-# Clubhouse Iteration Action
+# Shortcut Iteration Action
 
-Create an iteration on Clubhouse.
+Create an iteration on Shortcut.
 
 ## Inputs
 
-### `chToken`
+### `shortcutToken`
 
-_Required._ Clubhouse API auth token.
+_Required._ Shortcut API auth token.
 
 ### `name`
 
@@ -33,9 +33,9 @@ Iteration URL.
 ## Example usage
 
 ```yaml
-uses: Perdoo/clubhouse-iteration-action@v1
+uses: perdoo/clubhouse-iteration-action@v1
 with:
-  chToken: ${{ secrets.CLUBHOUSE_TOKEN }}
+  shortcutToken: ${{ secrets.SHORTCUT_TOKEN }}
   name: "v1.2.3"
   assignStoriesFromStateId: 123456789
 ```
@@ -45,6 +45,6 @@ To get your workflow state ids, use:
 ```shell
 curl -X GET \
   -H "Content-Type: application/json" \
-  -H "Clubhouse-Token: $CLUBHOUSE_TOKEN" \
+  -H "Clubhouse-Token: $SHORTCUT_TOKEN" \
   -L "https://api.clubhouse.io/api/v3/workflows"
 ```

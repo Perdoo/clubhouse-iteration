@@ -1,11 +1,11 @@
-name: Clubhouse Iteration
-description: Create an iteration on Clubhouse
+name: Shortcut Iteration
+description: Create an iteration on Shortcut
 branding:
   icon: arrow-right-circle
   color: purple
 inputs:
-  chToken:
-    description: Clubhouse API auth token
+  shortcutToken:
+    description: Shortcut API auth token
     required: true
   name:
     description: Iteration name

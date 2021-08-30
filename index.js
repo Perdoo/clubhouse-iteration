@@ -59,12 +59,12 @@ async function assignStoriesToIteration(client, iteration, stateId) {
 
 async function run() {
     try {
-        const chToken = core.getInput('chToken');
-        const client = Clubhouse.create(chToken);
+        const shortcutToken = core.getInput('shortcutToken');
+        const client = Clubhouse.create(shortcutToken);
         const canCreateIfStateEmpty = core.getInput('createIfStateEmpty') ? core.getBooleanInput('createIfStateEmpty') : true;
         const stateId = core.getInput('assignStoriesFromStateId');
 
-        core.setSecret('chToken');
+        core.setSecret('shortcutToken');
 
         if (!canCreateIfStateEmpty && await isStateEmpty(client, stateId)) {
             core.setOutput('iteration-created', false);
