@@ -10,12 +10,19 @@ inputs:
   name:
     description: Iteration name
     required: true
-  assignStoriesFromStateId:
-    description: Workflow state id that contains the stories for the iteration
-    required: true
-  createIfStateEmpty:
+  description:
+    description: Iteration description
+    required: false
+  canCreateIfNoNewStories:
     description: Create the iteration even if there aren't any stories to assign to it
     required: false
+  completedStateId:
+    description: Workflow state id for the completed state
+    required: true
+  completedAfter:
+    description: Datetime when the stories were moved to the completed state
+    required: true
+
 outputs:
   iteration-created:
     description: Was the iteration created

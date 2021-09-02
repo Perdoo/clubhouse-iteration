@@ -1,6 +1,6 @@
 # Shortcut Iteration Action
 
-Create an iteration on Shortcut.
+Create an iteration on Shortcut and assign stories that were recently marked as completed.
 
 ## Inputs
 
@@ -12,11 +12,19 @@ _Required._ Shortcut API auth token.
 
 _Required._ Iteration name.
 
-### `assignStoriesFromStateId`
+### `description`
 
-_Required._ Workflow state id that contains the stories for the iteration.
+_Required._ Iteration description.
 
-### `createIfStateEmpty`
+### `completedStateId`
+
+_Required._ Workflow state id for the completed state.
+
+### `completedAfter`
+
+_Required._ Datetime when the stories were moved to the completed state
+
+### `canCreateIfNoNewStories`
 
 _Optional._ Create the iteration even if there aren't any stories to assign to it.
 
@@ -32,19 +40,22 @@ Iteration URL.
 
 ## Example usage
 
+Firstly, add an event handler on Shortcut to move a story into the completed state when its branch gets merged into your main branch. Then use the below snippet to set up the action.
+
 ```yaml
-uses: perdoo/clubhouse-iteration-action@v1
+uses: perdoo/clubhouse-iteration-action@v1.0.0
 with:
   shortcutToken: ${{ secrets.SHORTCUT_TOKEN }}
   name: "v1.2.3"
-  assignStoriesFromStateId: 123456789
+  completedStateId: 123456789
+  completedAfter: ${{ github.event.head_commit.timestamp }}
 ```
 
-To get your workflow state ids, use:
+To get your completed workflow state id, use:
 
 ```shell
 curl -X GET \
   -H "Content-Type: application/json" \
-  -H "Clubhouse-Token: $SHORTCUT_TOKEN" \
+  -H "Shortcut-Token: $SHORTCUT_TOKEN" \
   -L "https://api.clubhouse.io/api/v3/workflows"
 ```
