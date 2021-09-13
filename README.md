@@ -43,7 +43,7 @@ Iteration URL.
 Firstly, add an event handler on Shortcut to move a story into the completed state when its branch gets merged into your main branch. Then use the below snippet to set up the action.
 
 ```yaml
-uses: perdoo/clubhouse-iteration-action@v1.0.0
+uses: perdoo/shortcut-iteration-action@v1.0.0
 with:
   shortcutToken: ${{ secrets.SHORTCUT_TOKEN }}
   name: "v1.2.3"
@@ -57,5 +57,5 @@ To get your completed workflow state id, use:
 curl -X GET \
   -H "Content-Type: application/json" \
   -H "Shortcut-Token: $SHORTCUT_TOKEN" \
-  -L "https://api.clubhouse.io/api/v3/workflows"
+  -L "https://api.app.shortcut.com/api/v3/workflows"
 ```

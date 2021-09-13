@@ -25,13 +25,18 @@ async function assignStoriesToIteration(
   completedStateId,
   completedAfter
 ) {
-  let total = 0;
+  let stories = [];
 
   const callback = async (result) => {
     for (const story of result.data) {
       if (canAssignStoryToIteration(story, completedAfter)) {
         client.updateStory(story.id, { iteration_id: iteration.id });
-        total += 1;
+        stories.push({
+          name: story.name,
+          url: story.app_url,
+          type: story.story_type,
+          epicId: story.epic_id,
+        });
       }
     }
 
@@ -44,11 +49,13 @@ async function assignStoriesToIteration(
 
   await processStories(client, completedStateId, callback);
 
-  if (total) {
-    core.info(`Assigned ${total} stories to iteration ${iteration.name}.`);
+  if (stories.length) {
+    core.info(`Assigned ${stories.length} stories to iteration ${iteration.name}.`);
   } else {
     core.info(`No stories added to iteration ${iteration.name}.`);
   }
+
+  return stories;
 }
 
 function canAssignStoryToIteration(story, completedAfter) {
@@ -78,10 +85,43 @@ function canAssignStoryToIteration(story, completedAfter) {
 
   return false;
 }
+
+function capitalize(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
 async function processStories(client, completedStateId, callback) {
   return await client
     .searchStories(`completed:today state:${completedStateId}`)
     .then(callback);
+}
+
+async function outputStories(client, stories) {
+  let output = "";
+  let currentType = "";
+  let epicNames = {}
+
+  stories.sort((a, b) => (a.type > b.type ? 1 : -1));
+
+  for (const {name, url, type, epicId} of stories) {
+    if (currentType !== type) {
+      output += `\n_${capitalize(type)}_\n`;
+      currentType = type;
+    }
+
+    if (epicId && !(epicId in epicNames)) {
+      const epic = await client.getEpic(epicId);
+      epicNames[epicId] = epic.name;
+    }
+
+    if (epicId) {
+      output += `<${url}|${epicNames[epicId]} - ${name}>\n`;
+    } else {
+      output += `<${url}|${name}>\n`;
+    }
+  }
+
+  core.setOutput("story-list", output);
 }
 
 async function createIteration(client, name, description) {
@@ -136,8 +176,14 @@ async function run() {
     }
 
     const iteration = await createIteration(client, name, description);
+    const stories = await assignStoriesToIteration(
+      client,
+      iteration,
+      completedStateId,
+      completedAfter
+    );
 
-    assignStoriesToIteration(client, iteration, completedStateId, completedAfter);
+    await outputStories(client, stories);
   } catch (error) {
     core.setFailed(error.message);
   }
