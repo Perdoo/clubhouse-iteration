@@ -1,6 +1,13 @@
 const core = require("@actions/core");
 const Clubhouse = require("clubhouse-lib");
 
+const ESCAPE = {
+  ">": "&gt;",
+  "<": "&lt;",
+  "&": "&amp;"
+};
+const ESPACE_REGEX = new RegExp(Object.keys(ESCAPE).join("|"), "gi");
+
 async function hasStoriesForIteration(client, completedStateId, completedAfter) {
   const callback = (result) => {
     for (const story of result.data) {
@@ -90,6 +97,10 @@ function capitalize(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
+function escapeText(string) {
+  return string.replace(ESPACE_REGEX, match => ESCAPE[match]);
+}
+
 async function processStories(client, completedStateId, callback) {
   return await client
     .searchStories(`completed:today state:${completedStateId}`)
@@ -115,9 +126,9 @@ async function outputStories(client, stories) {
     }
 
     if (epicId) {
-      output += `<${url}|${epicNames[epicId]} - ${name}>\n`;
+      output += `- <${url}|${escapeText(epicNames[epicId])} - ${escapeText(name)}>\n`;
     } else {
-      output += `<${url}|${name}>\n`;
+      output += `- <${url}|${escapeText(name)}>\n`;
     }
   }
 
