@@ -1,33 +1,54 @@
 const core = require("@actions/core");
-const Clubhouse = require("clubhouse-lib");
+const { ShortcutClient } = require("@useshortcut/client");
 
 const ESCAPE = {
   ">": "&gt;",
   "<": "&lt;",
-  "&": "&amp;"
+  "&": "&amp;",
 };
 const ESPACE_REGEX = new RegExp(Object.keys(ESCAPE).join("|"), "gi");
 
-async function hasStoriesForIteration(client, completedStateId, completedAfter) {
+async function hasStoriesForIteration(
+  shortcutClient,
+  completedStateId,
+  completedAfter
+) {
   const callback = (result) => {
-    for (const story of result.data) {
+    const data = result.data;
+
+    for (const story of data.data) {
       if (canAssignStoryToIteration(story, completedAfter)) {
         return true;
       }
     }
 
-    if (!result.fetchNext) {
+    if (!data.next) {
       return false;
     }
 
-    return result.fetchNext().then(callback);
+    return fetchNextSearchStories(shortcutClient, data.next, callback);
   };
 
-  return await processStories(client, completedStateId, callback);
+  return await processStories(shortcutClient, completedStateId, callback);
+}
+
+async function fetchNextSearchStories(shortcutClient, next, callback) {
+  if (!next) {
+    return;
+  }
+
+  return await shortcutClient
+    .request({
+      path: next,
+      method: "GET",
+      secure: true,
+      format: "json",
+    })
+    .then(callback);
 }
 
 async function assignStoriesToIteration(
-  client,
+  shortcutClient,
   iteration,
   completedStateId,
   completedAfter
@@ -35,9 +56,11 @@ async function assignStoriesToIteration(
   let stories = [];
 
   const callback = async (result) => {
-    for (const story of result.data) {
+    const data = result.data;
+
+    for (const story of data.data) {
       if (canAssignStoryToIteration(story, completedAfter)) {
-        client.updateStory(story.id, { iteration_id: iteration.id });
+        shortcutClient.updateStory(story.id, { iteration_id: iteration.id });
         stories.push({
           name: story.name,
           url: story.app_url,
@@ -47,17 +70,19 @@ async function assignStoriesToIteration(
       }
     }
 
-    if (!result.fetchNext) {
+    if (!data.next) {
       return;
     }
 
-    await result.fetchNext().then(callback);
+    return fetchNextSearchStories(shortcutClient, data.next, callback);
   };
 
-  await processStories(client, completedStateId, callback);
+  await processStories(shortcutClient, completedStateId, callback);
 
   if (stories.length) {
-    core.info(`Assigned ${stories.length} stories to iteration ${iteration.name}.`);
+    core.info(
+      `Assigned ${stories.length} stories to iteration ${iteration.name}.`
+    );
   } else {
     core.info(`No stories added to iteration ${iteration.name}.`);
   }
@@ -98,35 +123,41 @@ function capitalize(string) {
 }
 
 function escapeText(string) {
-  return string.replace(ESPACE_REGEX, match => ESCAPE[match]);
+  return string.replace(ESPACE_REGEX, (match) => ESCAPE[match]);
 }
 
-async function processStories(client, completedStateId, callback) {
-  return await client
-    .searchStories(`completed:today state:${completedStateId}`)
+async function processStories(shortcutClient, completedStateId, callback) {
+  return await shortcutClient
+    .searchStories({
+      query: `completed:today state:${completedStateId}`,
+    })
     .then(callback);
 }
 
-async function outputStories(client, stories) {
+async function outputStories(shortcutClient, stories) {
   let output = "";
   let currentType = "";
-  let epicNames = {}
+  let epicNames = {};
 
   stories.sort((a, b) => (a.type > b.type ? 1 : -1));
 
-  for (const {name, url, type, epicId} of stories) {
+  for (const { name, url, type, epicId } of stories) {
     if (currentType !== type) {
-      output += `\n_${capitalize(type)}_\n`;
+      output += `\n${capitalize(type)}\n`;
       currentType = type;
     }
 
     if (epicId && !(epicId in epicNames)) {
-      const epic = await client.getEpic(epicId);
+      const epic = await shortcutClient
+        .getEpic(epicId)
+        .then((response) => (response ? response.data : null));
       epicNames[epicId] = epic.name;
     }
 
     if (epicId) {
-      output += `- <${url}|${escapeText(epicNames[epicId])} - ${escapeText(name)}>\n`;
+      output += `- <${url}|${escapeText(epicNames[epicId])} - ${escapeText(
+        name
+      )}>\n`;
     } else {
       output += `- <${url}|${escapeText(name)}>\n`;
     }
@@ -135,7 +166,7 @@ async function outputStories(client, stories) {
   core.setOutput("story-list", output);
 }
 
-async function createIteration(client, name, description) {
+async function createIteration(shortcutClient, name, description) {
   const today = new Date().toISOString().slice(0, 10);
   const params = {
     name: name,
@@ -144,7 +175,9 @@ async function createIteration(client, name, description) {
     end_date: today,
   };
 
-  const previousIterations = await client.listIterations();
+  const previousIterations = await shortcutClient
+    .listIterations()
+    .then((response) => (response ? response.data : null));
 
   if (previousIterations.length) {
     previousIterations.sort(function (a, b) {
@@ -154,7 +187,9 @@ async function createIteration(client, name, description) {
     params["start_date"] = previousIterations[0]["end_date"];
   }
 
-  const iteration = await client.createIteration(params);
+  const iteration = await shortcutClient
+    .createIteration(params)
+    .then((response) => (response ? response.data : null));
 
   core.setOutput("iteration-created", true);
   core.setOutput("url", iteration.app_url);
@@ -166,7 +201,7 @@ async function createIteration(client, name, description) {
 async function run() {
   try {
     const shortcutToken = core.getInput("shortcutToken");
-    const client = Clubhouse.create(shortcutToken);
+    const shortcutClient = new ShortcutClient(shortcutToken);
     const completedStateId = core.getInput("completedStateId");
     const canCreateIfNoNewStories = core.getInput("canCreateIfNoNewStories")
       ? core.getBooleanInput("canCreateIfNoNewStories")
@@ -179,22 +214,28 @@ async function run() {
 
     if (
       !canCreateIfNoNewStories &&
-      !(await hasStoriesForIteration(client, completedStateId, completedAfter))
+      !(await hasStoriesForIteration(
+        shortcutClient,
+        completedStateId,
+        completedAfter
+      ))
     ) {
       core.setOutput("iteration-created", false);
-      core.info("No iteration created because there are no stories to assign to it.");
+      core.info(
+        "No iteration created because there are no stories to assign to it."
+      );
       return;
     }
 
-    const iteration = await createIteration(client, name, description);
+    const iteration = await createIteration(shortcutClient, name, description);
     const stories = await assignStoriesToIteration(
-      client,
+      shortcutClient,
       iteration,
       completedStateId,
       completedAfter
     );
 
-    await outputStories(client, stories);
+    await outputStories(shortcutClient, stories);
   } catch (error) {
     core.setFailed(error.message);
   }
