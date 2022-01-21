@@ -5,6 +5,9 @@ const ESCAPE = {
   ">": "&gt;",
   "<": "&lt;",
   "&": "&amp;",
+  "\r\n": " ",
+  "\n": " ",
+  "\r": " ",
 };
 const ESPACE_REGEX = new RegExp(Object.keys(ESCAPE).join("|"), "gi");
 
