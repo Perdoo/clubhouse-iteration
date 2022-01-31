@@ -43,7 +43,7 @@ Iteration URL.
 Firstly, add an event handler on Shortcut to move a story into the completed state when its branch gets merged into your main branch. Then use the below snippet to set up the action.
 
 ```yaml
-uses: perdoo/shortcut-iteration-action@v2.0.0
+uses: perdoo/shortcut-iteration-action@v2.0.1
 with:
   shortcutToken: ${{ secrets.SHORTCUT_TOKEN }}
   name: "v1.2.3"
