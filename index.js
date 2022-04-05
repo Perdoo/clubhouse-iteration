@@ -132,7 +132,7 @@ function escapeText(string) {
 async function processStories(shortcutClient, completedStateId, callback) {
   return await shortcutClient
     .searchStories({
-      query: `completed:today state:${completedStateId}`,
+      query: `moved:today state:${completedStateId}`,
     })
     .then(callback);
 }
